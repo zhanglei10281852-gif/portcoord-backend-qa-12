@@ -156,10 +156,8 @@ func (s *Service) Claim(ctx context.Context, req ClaimRequest) (*ClaimResult, er
 		return nil, apperr.Wrap(apperr.CodeInternal, "claim task failed", err)
 	}
 	if affected == 0 {
-		s.logger.Debug("claim already visible", apperr.F("task_id", req.TaskID))
+		return nil, apperr.Conflict("pilot_task", req.TaskID, t.Version)
 	}
-	t.Version++
-	t.ClaimedBy = req.ExecutorID
 	// Create the lease record.
 	lease := &domain.TaskLease{
 		ID:         leaseID,
