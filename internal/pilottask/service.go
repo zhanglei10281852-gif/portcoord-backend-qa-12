@@ -156,7 +156,7 @@ func (s *Service) Claim(ctx context.Context, req ClaimRequest) (*ClaimResult, er
 		return nil, apperr.Wrap(apperr.CodeInternal, "claim task failed", err)
 	}
 	if affected == 0 {
-		s.logger.Debug("claim already visible", apperr.F("task_id", req.TaskID))
+		return nil, apperr.Conflict("pilot_task", req.TaskID, t.Version)
 	}
 	t.Version++
 	t.ClaimedBy = req.ExecutorID
@@ -175,7 +175,7 @@ func (s *Service) Claim(ctx context.Context, req ClaimRequest) (*ClaimResult, er
 	}
 	if err := s.leases.CreateLease(ctx, lease); err != nil {
 		// Best-effort: clear the claim if lease creation fails.
-		_, _ = s.tasks.ClearPilotTaskClaim(ctx, req.TaskID, t.Version+1)
+		_, _ = s.tasks.ClearPilotTaskClaim(ctx, req.TaskID, t.Version)
 		return nil, apperr.Wrap(apperr.CodeInternal, "create lease failed", err)
 	}
 	_ = s.audit.Record(ctx, audit.Entry{
